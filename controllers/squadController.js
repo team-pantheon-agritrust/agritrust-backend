@@ -159,4 +159,31 @@ router.post('/verify-delivery', async (req, res) => {
     }
 });
 
+// ADMIN ONLY: Resolve a disputed transaction manually
+router.post('/resolve-dispute', async (req, res) => {
+    const { txRef, resolution, adminSecret } = req.body;
+
+    // Basic security for the demo
+    if (adminSecret !== "SQUAD_HACK_2024") {
+        return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+        const transaction = await Transaction.findOne({ txRef });
+
+        if (resolution === "ACCEPT_PAYMENT") {
+            transaction.status = 'PAID';
+            transaction.message = "Dispute resolved by Admin: Amount accepted.";
+        } else if (resolution === "REFUND") {
+            transaction.status = 'REFUNDED';
+            transaction.message = "Dispute resolved by Admin: Funds returned to buyer.";
+        }
+
+        await transaction.save();
+        res.json({ status: "success", message: `Trade ${txRef} is now ${transaction.status}` });
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
 module.exports = router;
