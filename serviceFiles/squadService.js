@@ -64,5 +64,6 @@ const disburseToFarmer = async (payoutData) => {
 };
 
 module.exports = {
-    createGrainVirtualAccount
+    createGrainVirtualAccount,
+    disburseToFarmer
 };
