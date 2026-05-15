@@ -423,12 +423,12 @@ router.post('/grade-and-scan', async (req, res) => {
             });
         }
 
-        const { grade, quality_score, confidence, breakdown, reasoning } = mlResponse.data;
+        const { grade, quality_score, confidence, breakdown, reasoning } = mlData;
 
         const defects = [];
-        if (breakdown.defect_assessment === 'Medium') defects.push('moderate_defects');
-        if (breakdown.defect_assessment === 'High') defects.push('significant_defects');
-        if (breakdown.dark_blobs_detected > 0) defects.push(`blobs_detected:${breakdown.dark_blobs_detected}`);
+        if (breakdown?.defect_assessment === 'Medium') defects.push('moderate_defects');
+        if (breakdown?.defect_assessment === 'High')   defects.push('significant_defects');
+        if (breakdown?.dark_blobs_detected > 0)        defects.push(`blobs_detected:${breakdown.dark_blobs_detected}`);
 
         if (!['A', 'B', 'C'].includes(grade)) {
             return res.status(502).json({ 
