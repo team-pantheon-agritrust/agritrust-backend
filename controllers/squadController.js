@@ -71,68 +71,135 @@ router.post('/initiate-sale', async (req, res) => {
 
 // ─── 2. SQUAD WEBHOOK ────────────────────────────────────────────────────────
 router.post('/webhook', async (req, res) => {
-    const squadSignature = req.headers['x-squad-encrypted-body'];
+
+    const squadSignature =
+        req.headers['x-squad-encrypted-body'];
+
     if (squadSignature) {
         const expectedHash = crypto
-            .createHmac('sha512', process.env.SQUAD_SECRET_KEY)
+            .createHmac(
+                'sha512',
+                process.env.SQUAD_SECRET_KEY
+            )
             .update(JSON.stringify(req.body))
             .digest('hex');
 
         if (expectedHash !== squadSignature) {
-            console.warn("SECURITY: Webhook signature mismatch. Rejecting.");
-            return res.status(401).json({ message: "Invalid signature" });
+
+            console.warn(
+                "SECURITY: Invalid webhook signature"
+            );
+
+            return res.status(401).json({
+                message: "Invalid signature"
+            });
         }
     }
 
-console.log(
-    "SQUAD WEBHOOK:",
-    JSON.stringify(req.body, null, 2)
-);
+    console.log(
+        "SQUAD WEBHOOK:",
+        JSON.stringify(req.body, null, 2)
+    );
 
-const { event, data } = req.body;
+    const { event, data } = req.body;
 
-if (
-    event === 'SUCCESS' ||
-    data?.status === 'SUCCESS'
-) {
+    if (
+        event === 'SUCCESS' ||
+        data?.status === 'SUCCESS'
+    ) {
 
         try {
-            const transaction = await Transaction.findOne({ txRef });
+            const txRef =
+                data.transaction_ref;
+            const amountReceived =
+                Number(data.amount) / 100;
+            const transaction =
+                await Transaction.findOne({
+                    txRef
+                });
 
             if (!transaction) {
-                console.error(`ERROR: Transaction ${txRef} not found.`);
-                return res.status(404).json({ message: "Transaction not found" });
+
+                console.error(
+                    `Transaction ${txRef} not found`
+                );
+
+                return res.status(404).json({
+                    message: "Transaction not found"
+                });
             }
 
-            if (transaction.status !== 'PENDING') {
-                console.log(`INFO: Transaction ${txRef} already ${transaction.status}. Skipping.`);
-                return res.status(200).json({ message: "Already processed" });
+            /**
+             * Prevent duplicate webhook processing
+             */
+            if (
+                transaction.status !== 'PENDING'
+            ) {
+
+                console.log(
+                    `Transaction ${txRef} already processed`
+                );
+
+                return res.status(200).json({
+                    message: "Already processed"
+                });
             }
 
-            const expectedAmount  = transaction.totalAmount;
-            const isAmountCorrect = Math.abs(amountReceived - expectedAmount) < 0.01;
+            const expectedAmount =
+                transaction.totalAmount;
+
+            const isAmountCorrect =
+                Math.abs(
+                    amountReceived - expectedAmount
+                ) < 0.01;
 
             if (!isAmountCorrect) {
-                console.warn(`FRAUD ALERT: Expected ₦${expectedAmount}, received ₦${amountReceived}`);
-                transaction.status          = 'DISPUTED';
-                transaction.deliveryMatchOk = false;
+
+                console.warn(
+                    `Amount mismatch for ${txRef}`
+                );
+
+                transaction.status =
+                    'DISPUTED';
+
+                transaction.deliveryMatchOk =
+                    false;
+
                 await transaction.save();
-                return res.status(200).json({ message: "Amount mismatch detected. Transaction moved to Dispute." });
+
+                return res.status(200).json({
+                    message:
+                        "Amount mismatch detected"
+                });
             }
 
             transaction.status = 'PAID';
+
             transaction.paidAt = new Date();
+
             await transaction.save();
 
-            return res.status(200).json({ message: "Payment verified and updated to PAID" });
+            return res.status(200).json({
+                message:
+                    "Payment verified and updated to PAID"
+            });
 
         } catch (err) {
-            console.error('Webhook Processing Error:', err.message);
-            return res.status(500).json({ error: "Internal Server Error" });
+
+            console.error(
+                "Webhook Processing Error:",
+                err.message
+            );
+
+            return res.status(500).json({
+                error: "Internal Server Error"
+            });
         }
     }
 
-    res.status(200).send("Event acknowledged");
+    return res.status(200).json({
+        message: "Event acknowledged"
+    });
 });
 
 // ─── 3. VERIFY DELIVERY ──────────────────────────────────────────────────────
