@@ -39,17 +39,20 @@ const createGrainVirtualAccount = async (farmer, txRef) => {
  * Disburses funds to the farmer's bank account.
  * Hits the Squad /disburse endpoint.
  */
+
 const disburseToFarmer = async (payoutData) => {
     try {
+        const MERCHANT_ID = "SB1SPYD3DX";
+
         const response = await axios.post(
-            `${BASE_URL}/disburse`,
+            `${BASE_URL}/payout/transfer`,
             {
                 hostname: "graintrust-api",
                 amount: payoutData.amount, // Amount in Kobo
                 bank_code: payoutData.bankCode,
                 account_number: payoutData.accountNumber,
                 account_name: payoutData.accountName,
-                transaction_reference: `DISB_${Date.now()}`,
+                transaction_reference: `${MERCHANT_ID}_${payoutData.txRef}_${Date.now()}`, // Format Fix
                 remark: `Payout for Trade ${payoutData.txRef}`
             },
             {
