@@ -31,7 +31,7 @@ router.post('/initiate-sale', async (req, res) => {
         const totalPrice = unitPrice * qty;
         const txRef      = `GT_${Date.now()}`;
 
-        const squadAccount = await squadService.createGrainVirtualAccount(farmer, txRef, totalAmount);
+        const squadAccount = await squadService.createGrainVirtualAccount(farmer, txRef, totalPrice);
         const virtualAcc   = squadAccount?.virtual_account_number || "9988776655";
 
         const newTransaction = await Transaction.create({
@@ -84,12 +84,15 @@ router.post('/webhook', async (req, res) => {
         }
     }
 
-    console.log("Incoming Webhook from Squad...");
-    const { event, data } = req.body;
+    console.log(
+    "SQUAD WEBHOOK:",
+    JSON.stringify(req.body, null, 2)
+);
 
-    if (event === 'charge.success') {
-        const txRef          = data.transaction_ref;
-        const amountReceived = data.amount / 100;
+if (
+    event === 'SUCCESS' ||
+    data?.status === 'SUCCESS'
+) {
 
         try {
             const transaction = await Transaction.findOne({ txRef });
@@ -179,6 +182,11 @@ router.post('/verify-delivery', async (req, res) => {
                 txRef: transaction.txRef
             });
 
+            console.log(
+                "Disbursement Result:",
+                JSON.stringify(disbursement, null, 2)
+            );
+
             // 3. Notify ML Service to update Trust Score
             // This aligns with the ML Engineer's README: POST /api/record-delivery
             try {
@@ -200,8 +208,8 @@ router.post('/verify-delivery', async (req, res) => {
             res.json({
                 status: "success",
                 outcome: "RELEASED",
-                disbursementId: disbursement?.data?.transaction_reference,
-                message: `Quality Verified. ₦${(payoutAmount/100).toLocaleString()} disbursed to farmer (3% fee applied).`
+                disbursementId: disbursement?.transaction_reference,
+                message: `Quality Verified. ₦${(payoutNaira/100).toLocaleString()} disbursed to farmer (3% fee applied).`
             });
 
         } else {
