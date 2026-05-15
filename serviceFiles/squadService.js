@@ -34,6 +34,35 @@ const createGrainVirtualAccount = async (farmer, txRef) => {
     }
 };
 
+
+/**
+ * Disburses funds to the farmer's bank account.
+ * Hits the Squad /disburse endpoint.
+ */
+const disburseToFarmer = async (payoutData) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/disburse`,
+            {
+                hostname: "graintrust-api",
+                amount: payoutData.amount, // Amount in Kobo
+                bank_code: payoutData.bankCode,
+                account_number: payoutData.accountNumber,
+                account_name: payoutData.accountName,
+                transaction_reference: `DISB_${Date.now()}`,
+                remark: `Payout for Trade ${payoutData.txRef}`
+            },
+            {
+                headers: { Authorization: `Bearer ${SQUAD_SECRET_KEY}` }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Disbursement API Error:", error.response?.data || error.message);
+        throw new Error("Financial disbursement failed");
+    }
+};
+
 module.exports = {
     createGrainVirtualAccount
 };
