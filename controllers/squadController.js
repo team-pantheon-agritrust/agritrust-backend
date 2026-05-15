@@ -175,7 +175,7 @@ router.post('/verify-delivery', async (req, res) => {
             // This moves money from your Squad Escrow to the Farmer's actual bank
             const disbursement = await squadService.disburseToFarmer({
                 amount: payoutAmount,
-                bankCode: "058", // This should ideally come from a Farmer Profile model
+                bankCode: "000058", // This should ideally come from a Farmer Profile model
                 accountNumber: "0123456789", 
                 accountName: `${transaction.farmer.firstName} ${transaction.farmer.lastName}`,
                 txRef: transaction.txRef
