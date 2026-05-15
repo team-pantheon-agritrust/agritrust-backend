@@ -31,6 +31,8 @@ const transactionSchema = new mongoose.Schema({
         lastName: String,
         phone: String,
         email: String,
+        bankCode: String,
+        accountNumber: String,
     },
     grainType:  String,
     quantity:   Number,                 // in kg

@@ -31,7 +31,7 @@ router.post('/initiate-sale', async (req, res) => {
         const totalPrice = unitPrice * qty;
         const txRef      = `GT_${Date.now()}`;
 
-        const squadAccount = await squadService.createGrainVirtualAccount(farmer, txRef);
+        const squadAccount = await squadService.createGrainVirtualAccount(farmer, txRef, totalAmount);
         const virtualAcc   = squadAccount?.virtual_account_number || "9988776655";
 
         const newTransaction = await Transaction.create({
@@ -163,20 +163,18 @@ router.post('/verify-delivery', async (req, res) => {
         transaction.deliveryMatchOk = isMatch;
 
         if (isMatch) {
-            // 1. Calculate Payout (Kobo)
-            // Note: Squad API works in Kobo. ₦100 = 10000 Kobo.
-            const totalKobo = transaction.totalAmount * 100;
+            const totalNaira = transaction.totalAmount;
             
             // Apply a dynamic platform fee based on the hackathon logic (e.g., 3%)
             const platformFee = 0.03; 
-            const payoutAmount = Math.floor(totalKobo * (1 - platformFee));
+            const payoutNaira = totalNaira * (1 - platformFee);
 
             // 2. Trigger Squad Disbursement
             // This moves money from your Squad Escrow to the Farmer's actual bank
             const disbursement = await squadService.disburseToFarmer({
-                amount: payoutAmount,
+                amount: payoutNaira,
                 bankCode: "000058", // This should ideally come from a Farmer Profile model
-                accountNumber: "0123456789", 
+                accountNumber: "0123456789", // for demo purposes 
                 accountName: `${transaction.farmer.firstName} ${transaction.farmer.lastName}`,
                 txRef: transaction.txRef
             });
@@ -495,7 +493,7 @@ router.post('/grade-and-scan', async (req, res) => {
             const totalAmount = unitPrice * qty;
             const txRef       = `GT_${Date.now()}`;
 
-            const squadAcc   = await squadService.createGrainVirtualAccount(farmer, txRef);
+            const squadAcc   = await squadService.createGrainVirtualAccount(farmer, txRef, totalAmount);
             const virtualAcc = squadAcc?.virtual_account_number || "9988776655";
 
             const transaction = await Transaction.create({
