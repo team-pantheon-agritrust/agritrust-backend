@@ -1,27 +1,32 @@
 const axios = require('axios');
 
-// These should be in your .env file
+/**
+ * Squad API Service for Grain-Trust
+ * Environment: Sandbox (sandbox-api-d.squadco.com)
+ */
+
 const SQUAD_SECRET_KEY = process.env.SQUAD_SECRET_KEY;
 const BASE_URL = 'https://sandbox-api-d.squadco.com'; 
+const MERCHANT_ID = "SB1SPYD3DX"; // Your Sandbox Merchant ID
 
 /**
- * Creates a dedicated Virtual Account for a grain trade.
- * This is the "Escrow" account where the buyer's money sits.
+ * 1. DYNAMIC VIRTUAL ACCOUNT (ESCROW INITIATION)
+ * Aligned with Dynamic VA documentation.
+ * Used for one-time trade payments without requiring a permanent farmer BVN.
  */
-const createGrainVirtualAccount = async (farmer, txRef) => {
+const createGrainVirtualAccount = async (farmer, txRef, amount) => {
     try {
-        // In a real hackathon demo, if you don't have a valid key yet, 
-        // this try/catch ensures the app doesn't crash.
+        const amountInKobo = String(Math.round(amount * 100));
+
         const response = await axios.post(
-            `${BASE_URL}/virtual-account`,
+            `${BASE_URL}/virtual-account/dynamic`,
             {
-                first_name: farmer.firstName || "Farmer",
-                last_name: farmer.lastName || "User",
-                middle_name: "GrainTrust",
-                mobile_num: farmer.phone || "08011111111",
-                email: farmer.email || "test@graintrust.com",
-                bvn: "12345678901", // Sandbox dummy BVN
-                beneficiary_account: "0000000000" // Funds stay in Squad till manual release
+                amount: amountInKobo,
+                transaction_ref: txRef,
+                duration: "24", // Account expires in 24 hours if not paid
+                customer_name: `${farmer.firstName} ${farmer.lastName}`,
+                email: farmer.email || "trade@graintrust.com",
+                // callback_url should be set in Dashboard for webhooks
             },
             {
                 headers: { Authorization: `Bearer ${SQUAD_SECRET_KEY}` }
@@ -29,31 +34,49 @@ const createGrainVirtualAccount = async (farmer, txRef) => {
         );
         return response.data.data;
     } catch (error) {
-        console.warn("⚠️ Squad API Warning: Using Sandbox Placeholder. Check your SQUAD_SECRET_KEY.");
-        return { virtual_account_number: "9988776655" };
+        console.warn("⚠️ Squad VA Error: Falling back to placeholder for demo.");
+        return { virtual_account_number: "9988776655", expected_amount: amount };
     }
 };
 
+/**
+ * 2. ACCOUNT LOOKUP (TECHNICAL DEPTH)
+ * Validates the farmer's bank details before attempting disbursement.
+ */
+const verifyBankAccount = async (accountNumber, bankCode) => {
+    try {
+        const response = await axios.post(
+            `${BASE_URL}/account/verify`,
+            { account_number: accountNumber, bank_code: bankCode },
+            { headers: { Authorization: `Bearer ${SQUAD_SECRET_KEY}` } }
+        );
+        return response.data.data;
+    } catch (error) {
+        console.error("Account Verification Failed:", error.response?.data?.message);
+        return null;
+    }
+};
 
 /**
- * Disburses funds to the farmer's bank account.
- * Hits the Squad /disburse endpoint.
+ * 3. DISBURSEMENT (TRANSFER API)
+ * Strictly follows the required schema: MERCHANTID_REF format and 6-digit NIP codes.
  */
-
 const disburseToFarmer = async (payoutData) => {
     try {
-        const MERCHANT_ID = "SB1SPYD3DX";
+        // Ensure amount is in Kobo string format
+        const amountInKobo = String(Math.round(payoutData.amount * 100));
 
         const response = await axios.post(
             `${BASE_URL}/payout/transfer`,
             {
-                amount: String(payoutData.amount), // Amount in Kobo
-                currency_id: "NGN",
-                bank_code: payoutData.bankCode,
+                // Required Format: MERCHANTID_REFERENCE
+                transaction_reference: `${MERCHANT_ID}_${payoutData.txRef}_${Date.now()}`,
+                amount: amountInKobo,
+                currency_id: "NGN", // Mandatory field
+                bank_code: payoutData.bankCode, // Must be 6-digit NIP code
                 account_number: payoutData.accountNumber,
                 account_name: payoutData.accountName,
-                transaction_reference: `${MERCHANT_ID}_${payoutData.txRef}_${Date.now()}`, // Format Fix
-                remark: `Payout for Trade ${payoutData.txRef}`
+                remark: `Grain-Trust Payout: ${payoutData.txRef}`
             },
             {
                 headers: { Authorization: `Bearer ${SQUAD_SECRET_KEY}` }
@@ -61,12 +84,20 @@ const disburseToFarmer = async (payoutData) => {
         );
         return response.data;
     } catch (error) {
-        console.error("Disbursement API Error:", error.response?.data || error.message);
-        throw new Error("Financial disbursement failed");
+        const errorMsg = error.response?.data?.message || error.message;
+        console.error("Disbursement API Error:", errorMsg);
+        
+        // Critical for hackathon: Log if the merchant isn't profiled yet
+        if (errorMsg.includes("profiled")) {
+            console.error("🚨 ACTION REQUIRED: Enable 'Transfers' in Squad Sandbox Settings.");
+        }
+        
+        throw new Error(`Financial disbursement failed: ${errorMsg}`);
     }
 };
 
 module.exports = {
     createGrainVirtualAccount,
+    verifyBankAccount,
     disburseToFarmer
 };
