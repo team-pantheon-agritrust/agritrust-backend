@@ -25,9 +25,7 @@ const initializeDynamicPool = async (numberOfAccounts = 10) => {
 
         const response = await axios.post(
             `${BASE_URL}/virtual-account/create-dynamic-virtual-account`,
-            {
-                number_of_accounts: numberOfAccounts
-            },
+            {},
             { headers }
         );
 
