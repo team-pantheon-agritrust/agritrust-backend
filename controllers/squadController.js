@@ -84,10 +84,12 @@ router.post('/webhook', async (req, res) => {
         }
     }
 
-    console.log(
+console.log(
     "SQUAD WEBHOOK:",
     JSON.stringify(req.body, null, 2)
 );
+
+const { event, data } = req.body;
 
 if (
     event === 'SUCCESS' ||
