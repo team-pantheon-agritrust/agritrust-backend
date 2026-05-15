@@ -278,7 +278,7 @@ router.post('/verify-delivery', async (req, res) => {
                 status: "success",
                 outcome: "RELEASED",
                 disbursementId: disbursement?.transaction_reference,
-                message: `Quality Verified. ₦${(payoutNaira/100).toLocaleString()} disbursed to farmer (3% fee applied).`
+                message: `Quality Verified. ₦${payoutNaira.toLocaleString()} disbursed to farmer (3% fee applied).`
             });
 
         } else {
