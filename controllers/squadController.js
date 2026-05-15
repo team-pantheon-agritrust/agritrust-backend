@@ -6,16 +6,6 @@ const marketService = require('../serviceFiles/marketService');
 const { Transaction, Scan } = require('../db/models');
 const axios   = require('axios');
 
-app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-}));
 
 const ML_API = process.env.ML_API_URL || 'http://localhost:5000';
 
