@@ -49,6 +49,7 @@ const disburseToFarmer = async (payoutData) => {
             {
                 hostname: "graintrust-api",
                 amount: payoutData.amount, // Amount in Kobo
+                currency_id: "NGN",
                 bank_code: payoutData.bankCode,
                 account_number: payoutData.accountNumber,
                 account_name: payoutData.accountName,
