@@ -25,7 +25,6 @@ const scanSchema = new mongoose.Schema({
 // Created when a sale is initiated; updated through the payment lifecycle
 const transactionSchema = new mongoose.Schema({
     txRef:      { type: String, required: true, unique: true }, // e.g. "GT_1234567890"
-    totalAmount: { type:Number, required: true},
     scanId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Scan' }, // links back to the scan
     farmer: {
         firstName: String,
@@ -36,22 +35,24 @@ const transactionSchema = new mongoose.Schema({
     grainType:  String,
     quantity:   Number,                 // in kg
     unitPrice:  Number,                 // per kg
-    totalAmount: Number,                // unitPrice * quantity
+    totalAmount: { type: Number, required: true }, // unitPrice * quantity
     virtualAccount: String,             // Squad account number
 
     // Payment lifecycle
     status: {
         type: String,
-        enum: ['PENDING', 'PAID', 'DELIVERED', 'RELEASED', 'DISPUTED'],
+        enum: ['PENDING', 'PAID', 'DELIVERED', 'RELEASED', 'DISPUTED', 'REFUNDED'],
         default: 'PENDING',
     },
 
     // Filled in after delivery verification
     deliveryGrade:   String,            // grade the buyer scanned on arrival
     deliveryMatchOk: Boolean,           // true if delivery matched the original scan
-    
+    resolutionNote:  String,            // set by admin on dispute resolution
+
     paidAt:      Date,
     releasedAt:  Date,
+    resolvedAt:  Date,
 }, { timestamps: true });
 
 const Scan        = mongoose.model('Scan', scanSchema);

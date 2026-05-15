@@ -10,8 +10,10 @@ connectDB().then(() => {
     const squadRoutes = require('./controllers/squadController');
     app.use('/api/squad', squadRoutes);
 
-    app.listen(process.env.PORT, () => {
-        console.log(`Server is running on http://localhost:${process.env.PORT}`);
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
         console.log(`Squad should be pointing to your Ngrok URL!`);
     });
 });
+
