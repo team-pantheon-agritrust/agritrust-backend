@@ -47,8 +47,7 @@ const disburseToFarmer = async (payoutData) => {
         const response = await axios.post(
             `${BASE_URL}/payout/transfer`,
             {
-                hostname: "graintrust-api",
-                amount: payoutData.amount, // Amount in Kobo
+                amount: String(payoutData.amount), // Amount in Kobo
                 currency_id: "NGN",
                 bank_code: payoutData.bankCode,
                 account_number: payoutData.accountNumber,
