@@ -68,6 +68,7 @@ const createGrainVirtualAccount = async (
                 transaction_ref: txRef,
                 amount: amountInKobo,
                 duration: "86400",   // 24 hours in seconds
+                email: farmer.email || 'trade@graintrust.com',
             },
             { headers }
         );
