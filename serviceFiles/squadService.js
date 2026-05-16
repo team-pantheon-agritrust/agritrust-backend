@@ -66,17 +66,8 @@ const createGrainVirtualAccount = async (
             `${BASE_URL}/virtual-account/initiate-dynamic-virtual-account`,
             {
                 transaction_ref: txRef,
-
                 amount: amountInKobo,
-
-                // 24 hours in seconds
-                duration: "86400",
-
-                customer_name:
-                    `${farmer.firstName} ${farmer.lastName}`,
-
-                email:
-                    farmer.email || 'trade@graintrust.com'
+                duration: "86400",   // 24 hours in seconds
             },
             { headers }
         );
@@ -226,20 +217,7 @@ const disburseToFarmer = async (payoutData) => {
             );
         }
 
-        console.warn(
-    '⚠️ Using simulated payout fallback'
-);
-
-return {
-    success: true,
-    simulated: true,
-    transaction_reference:
-        `${MERCHANT_ID}_${payoutData.txRef}_SIM`,
-    data: {
-        status: 'SUCCESS',
-        message: 'Simulated payout successful'
-    }
-};
+    throw new Error(`Financial disbursement failed: ${errorMsg}`);  
     }
 };
 
